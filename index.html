@@ -1,0 +1,84 @@
+apiVersion: apps/v1 # Версия API для ресурсов Deployment
+kind: Deployment # Тип ресурса - Deployment
+metadata:
+  name: web-application # Имя Deployment
+  labels:
+    app: web-application # Метка для идентификации приложения
+spec:
+  replicas: 4 # Начальное количество подов, справляющихся с пиковой нагрузкой
+  selector:
+    matchLabels:
+      app: web-application # Условие выбора подов для этого Deployment
+  template:
+    metadata:
+      labels:
+        app: web-application # Метка для подов, создаваемых этим Deployment
+    spec:
+      containers:
+      - name: web-application # Имя контейнера
+        image: my-web-application:latest # Образ Docker для контейнера
+        resources:
+          requests:
+            memory: "128Mi" # Запрос памяти
+            cpu: "100m"     # Запрос CPU
+          limits:
+            memory: "128Mi" # Лимит памяти
+            cpu: "500m"     # Лимит CPU для инициализации
+        readinessProbe:
+          httpGet:
+            path: /healthz # Путь для проверки готовности
+            port: 8080 # Порт для проверки готовности
+          initialDelaySeconds: 10 # Задержка перед первой проверкой готовности
+          periodSeconds: 5 # Периодичность проверок готовности
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                    - web-application # Применяем анти-аффинити к подам с меткой web-application
+              topologyKey: "kubernetes.io/hostname" # Анти-аффинити на уровне нод
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                    - web-application
+              topologyKey: "topology.kubernetes.io/zone" # Анти-аффинити на уровне зон
+      tolerations:
+        - key: "zone"
+          operator: "Exists"
+          effect: "NoExecute" # Допускаем размещение подов в различных зонах
+---
+apiVersion: autoscaling/v2beta2 # Версия API для ресурсов HorizontalPodAutoscaler
+kind: HorizontalPodAutoscaler # Тип ресурса - HorizontalPodAutoscaler
+metadata:
+  name: web-application-hpa # Имя HorizontalPodAutoscaler
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: web-application # Целевой Deployment для автонастройки
+  minReplicas: 2 # Минимальное количество подов ночью
+  maxReplicas: 10 # Максимальное количество подов днем
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 50 # Целевое значение использования CPU
+---
+apiVersion: v1 # Версия API для ресурсов Service
+kind: Service # Тип ресурса - Service
+metadata:
+  name: web-application-service # Имя Service
+spec:
+  selector:
+    app: web-application # Селектор для выбора подов
+  ports:
+    - protocol: TCP # Протокол TCP
+      port: 80 # Порт, на котором доступен сервис
+      targetPort: 8080 # Порт, на который перенаправляются запросы внутри кластера
