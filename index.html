@@ -1,3 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YAML Code Display</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        pre {
+            background-color: #f4f4f4;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            overflow-x: auto;
+        }
+        code {
+            display: block;
+            white-space: pre-wrap; /* Удерживает пробелы и переносы строк */
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <h1>YAML Code Example</h1>
+    <pre><code>
 apiVersion: apps/v1 # Версия API для ресурсов Deployment
 kind: Deployment # Тип ресурса - Deployment
 metadata:
@@ -82,3 +110,6 @@ spec:
     - protocol: TCP # Протокол TCP
       port: 80 # Порт, на котором доступен сервис
       targetPort: 8080 # Порт, на который перенаправляются запросы внутри кластера
+    </code></pre>
+</body>
+</html>
